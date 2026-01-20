@@ -53,9 +53,15 @@ jobs:
         working-directory: apps/${{ steps.app.outputs.app_id }}
         run: npx expo export --platform web --output-dir dist
 
-      - name: Fix canvaskit path
+      - name: Fix asset paths for subdirectory
         working-directory: apps/${{ steps.app.outputs.app_id }}/dist
         run: |
+          # Fix paths in index.html to be relative
+          sed -i 's|href="/_expo|href="./_expo|g' index.html
+          sed -i 's|src="/_expo|src="./_expo|g' index.html
+          sed -i 's|href="/assets|href="./assets|g' index.html
+          sed -i 's|src="/assets|src="./assets|g' index.html
+          # Copy canvaskit to expected location
           mkdir -p _expo/static/js/web
           cp canvaskit.wasm _expo/static/js/web/ 2>/dev/null || true
 
