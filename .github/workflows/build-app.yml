@@ -38,38 +38,25 @@ jobs:
         run: |
           APP_DIR="apps/${{ steps.app.outputs.app_id }}"
 
-          # Backup ONLY the app's custom tab screens (not layouts)
-          mkdir -p /tmp/app_tabs_backup
-          if [ -d "$APP_DIR/src/app/(tabs)" ]; then
-            for f in "$APP_DIR/src/app/(tabs)"/*.jsx "$APP_DIR/src/app/(tabs)"/*.tsx; do
-              if [ -f "$f" ] && [[ "$(basename "$f")" != _layout* ]]; then
-                cp "$f" /tmp/app_tabs_backup/
-                echo "Backed up: $(basename "$f")"
-              fi
-            done
+          # Backup entire app's src/app folder
+          if [ -d "$APP_DIR/src/app" ]; then
+            cp -r "$APP_DIR/src/app" /tmp/app_backup
+            echo "Backed up app's src/app"
           fi
 
           # Copy entire template to app directory
           cp -r template/* "$APP_DIR/"
-          echo "Template copied to app"
+          echo "Template copied"
 
-          # Delete ALL template tab screens (keep only _layout)
-          for f in "$APP_DIR/src/app/(tabs)"/*.jsx "$APP_DIR/src/app/(tabs)"/*.tsx; do
-            if [ -f "$f" ] && [[ "$(basename "$f")" != _layout* ]]; then
-              rm "$f"
-              echo "Removed template screen: $(basename "$f")"
-            fi
-          done
-
-          # Restore ONLY the app's custom screen files
-          if [ "$(ls -A /tmp/app_tabs_backup 2>/dev/null)" ]; then
-            cp /tmp/app_tabs_backup/* "$APP_DIR/src/app/(tabs)/"
-            echo "Restored custom screens:"
-            ls /tmp/app_tabs_backup/
+          # Replace template's src/app with app's custom src/app
+          if [ -d /tmp/app_backup ]; then
+            rm -rf "$APP_DIR/src/app"
+            cp -r /tmp/app_backup "$APP_DIR/src/app"
+            echo "Restored app's custom routes"
           fi
 
-          echo "Final tabs:"
-          ls -la "$APP_DIR/src/app/(tabs)/" || true
+          echo "Final structure:"
+          ls -la "$APP_DIR/src/app/(tabs)/" 2>/dev/null || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
