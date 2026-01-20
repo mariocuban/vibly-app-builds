@@ -36,10 +36,26 @@ jobs:
 
       - name: Merge template with app code
         run: |
-          # Copy template files first
-          cp -r template/* apps/${{ steps.app.outputs.app_id }}/
-          # The app's src/ folder will override template's src/
-          echo "Template merged with app code"
+          APP_DIR="apps/${{ steps.app.outputs.app_id }}"
+
+          # Backup the app's custom src/app folder (the routes/screens)
+          if [ -d "$APP_DIR/src/app" ]; then
+            mv "$APP_DIR/src/app" /tmp/app_routes_backup
+            echo "Backed up app routes"
+          fi
+
+          # Copy template files to app directory (fills in missing base files)
+          cp -rn template/* "$APP_DIR/" 2>/dev/null || true
+
+          # Restore the app's custom routes (overwriting template routes)
+          if [ -d /tmp/app_routes_backup ]; then
+            rm -rf "$APP_DIR/src/app"
+            mv /tmp/app_routes_backup "$APP_DIR/src/app"
+            echo "Restored app custom routes"
+          fi
+
+          echo "Template merged - app's custom routes preserved"
+          ls -la "$APP_DIR/src/app/" || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
