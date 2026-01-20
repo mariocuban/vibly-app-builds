@@ -19,15 +19,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Determine app to build
+            - name: Determine app to build
         id: app
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "app_id=${{ inputs.app_id }}" >> $GITHUB_OUTPUT
           else
-            APP_ID=$(git diff --name-only HEAD~1 HEAD | grep "^apps/" | head -1 | cut -d'/' -f2)
+            # Find the most recently modified app folder
+            APP_ID=$(ls -td apps/*/ 2>/dev/null | head -1 | xargs basename)
+            if [ -z "$APP_ID" ] || [ "$APP_ID" = "." ]; then
+              echo "No app found in apps/ directory"
+              exit 1
+            fi
             echo "app_id=$APP_ID" >> $GITHUB_OUTPUT
           fi
+          echo "Building app: $APP_ID"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
