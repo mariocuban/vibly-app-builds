@@ -38,25 +38,25 @@ jobs:
         run: |
           APP_DIR="apps/${{ steps.app.outputs.app_id }}"
 
-          # Backup entire app's src/app folder
-          if [ -d "$APP_DIR/src/app" ]; then
-            cp -r "$APP_DIR/src/app" /tmp/app_backup
-            echo "Backed up app's src/app"
+          # Only backup the (tabs) folder - template provides index.jsx, _layout.jsx
+          if [ -d "$APP_DIR/src/app/(tabs)" ]; then
+            cp -r "$APP_DIR/src/app/(tabs)" /tmp/tabs_backup
+            echo "Backed up app's (tabs) folder"
           fi
 
           # Copy entire template to app directory
           cp -r template/* "$APP_DIR/"
           echo "Template copied"
 
-          # Replace template's src/app with app's custom src/app
-          if [ -d /tmp/app_backup ]; then
-            rm -rf "$APP_DIR/src/app"
-            cp -r /tmp/app_backup "$APP_DIR/src/app"
-            echo "Restored app's custom routes"
+          # Replace only the (tabs) folder with app's custom tabs
+          if [ -d /tmp/tabs_backup ]; then
+            rm -rf "$APP_DIR/src/app/(tabs)"
+            cp -r /tmp/tabs_backup "$APP_DIR/src/app/(tabs)"
+            echo "Restored app's custom tabs"
           fi
 
-          echo "Final structure:"
-          ls -la "$APP_DIR/src/app/(tabs)/" 2>/dev/null || true
+          echo "Final src/app structure:"
+          ls -la "$APP_DIR/src/app/"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
