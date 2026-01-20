@@ -41,7 +41,6 @@ jobs:
           # Backup ONLY the app's custom tab screens (not layouts)
           mkdir -p /tmp/app_tabs_backup
           if [ -d "$APP_DIR/src/app/(tabs)" ]; then
-            # Copy only the screen files, not _layout files
             for f in "$APP_DIR/src/app/(tabs)"/*.jsx "$APP_DIR/src/app/(tabs)"/*.tsx; do
               if [ -f "$f" ] && [[ "$(basename "$f")" != _layout* ]]; then
                 cp "$f" /tmp/app_tabs_backup/
@@ -54,13 +53,22 @@ jobs:
           cp -r template/* "$APP_DIR/"
           echo "Template copied to app"
 
-          # Restore ONLY the app's custom screen files (overwrites template screens)
+          # Delete ALL template tab screens (keep only _layout)
+          for f in "$APP_DIR/src/app/(tabs)"/*.jsx "$APP_DIR/src/app/(tabs)"/*.tsx; do
+            if [ -f "$f" ] && [[ "$(basename "$f")" != _layout* ]]; then
+              rm "$f"
+              echo "Removed template screen: $(basename "$f")"
+            fi
+          done
+
+          # Restore ONLY the app's custom screen files
           if [ "$(ls -A /tmp/app_tabs_backup 2>/dev/null)" ]; then
             cp /tmp/app_tabs_backup/* "$APP_DIR/src/app/(tabs)/"
-            echo "Restored custom tab screens"
+            echo "Restored custom screens:"
+            ls /tmp/app_tabs_backup/
           fi
 
-          echo "Template merged - custom screens preserved, layouts from template"
+          echo "Final tabs:"
           ls -la "$APP_DIR/src/app/(tabs)/" || true
 
       - name: Setup Node.js
