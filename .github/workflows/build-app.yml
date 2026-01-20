@@ -38,24 +38,30 @@ jobs:
         run: |
           APP_DIR="apps/${{ steps.app.outputs.app_id }}"
 
-          # Backup the app's custom src/app folder (the routes/screens)
-          if [ -d "$APP_DIR/src/app" ]; then
-            mv "$APP_DIR/src/app" /tmp/app_routes_backup
-            echo "Backed up app routes"
+          # Backup ONLY the app's custom tab screens (not layouts)
+          mkdir -p /tmp/app_tabs_backup
+          if [ -d "$APP_DIR/src/app/(tabs)" ]; then
+            # Copy only the screen files, not _layout files
+            for f in "$APP_DIR/src/app/(tabs)"/*.jsx "$APP_DIR/src/app/(tabs)"/*.tsx; do
+              if [ -f "$f" ] && [[ "$(basename "$f")" != _layout* ]]; then
+                cp "$f" /tmp/app_tabs_backup/
+                echo "Backed up: $(basename "$f")"
+              fi
+            done
           fi
 
-          # Copy template files to app directory (fills in missing base files)
-          cp -rn template/* "$APP_DIR/" 2>/dev/null || true
+          # Copy entire template to app directory
+          cp -r template/* "$APP_DIR/"
+          echo "Template copied to app"
 
-          # Restore the app's custom routes (overwriting template routes)
-          if [ -d /tmp/app_routes_backup ]; then
-            rm -rf "$APP_DIR/src/app"
-            mv /tmp/app_routes_backup "$APP_DIR/src/app"
-            echo "Restored app custom routes"
+          # Restore ONLY the app's custom screen files (overwrites template screens)
+          if [ "$(ls -A /tmp/app_tabs_backup 2>/dev/null)" ]; then
+            cp /tmp/app_tabs_backup/* "$APP_DIR/src/app/(tabs)/"
+            echo "Restored custom tab screens"
           fi
 
-          echo "Template merged - app's custom routes preserved"
-          ls -la "$APP_DIR/src/app/" || true
+          echo "Template merged - custom screens preserved, layouts from template"
+          ls -la "$APP_DIR/src/app/(tabs)/" || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
