@@ -76,6 +76,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: apps/${{ steps.app.outputs.app_id }}/dist
           destination_dir: ${{ steps.app.outputs.app_id }}
+          keep_files: true
 
       - name: Output preview URL
         run: |
