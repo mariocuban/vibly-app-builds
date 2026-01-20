@@ -1,0 +1,67 @@
+name: Build Expo App
+
+on:
+  push:
+    paths:
+      - 'apps/**'
+  workflow_dispatch:
+    inputs:
+      app_id:
+        description: 'App ID to build'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine app to build
+        id: app
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "app_id=${{ inputs.app_id }}" >> $GITHUB_OUTPUT
+          else
+            # Get the changed app folder from the commit
+            APP_ID=$(git diff --name-only HEAD~1 HEAD | grep "^apps/" | head -1 | cut -d'/' -f2)
+            echo "app_id=$APP_ID" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: apps/${{ steps.app.outputs.app_id }}/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('apps/${{ steps.app.outputs.app_id }}/package-lock.json') }}
+
+      - name: Install dependencies
+        working-directory: apps/${{ steps.app.outputs.app_id }}
+        run: npm install
+
+      - name: Build for web
+        working-directory: apps/${{ steps.app.outputs.app_id }}
+        run: npx expo export --platform web --output-dir dist
+
+      - name: Fix canvaskit path
+        working-directory: apps/${{ steps.app.outputs.app_id }}/dist
+        run: |
+          mkdir -p _expo/static/js/web
+          cp canvaskit.wasm _expo/static/js/web/ 2>/dev/null || true
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: apps/${{ steps.app.outputs.app_id }}/dist
+          destination_dir: ${{ steps.app.outputs.app_id }}
+
+      - name: Output preview URL
+        run: |
+          echo "Preview URL: https://mariocuban.github.io/vibly-app-builds/${{ steps.app.outputs.app_id }}"
