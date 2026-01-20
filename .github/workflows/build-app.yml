@@ -75,6 +75,8 @@ jobs:
 
       - name: Build for web
         working-directory: apps/${{ steps.app.outputs.app_id }}
+        env:
+          EXPO_BASE_URL: /${{ steps.app.outputs.app_id }}
         run: npx expo export --platform web --output-dir dist
 
       - name: Fix asset paths for subdirectory
